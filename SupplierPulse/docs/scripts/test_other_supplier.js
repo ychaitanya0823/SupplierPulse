@@ -1,0 +1,12 @@
+const fs=require('fs');const src=fs.readFileSync(__dirname+'/other_supplier_check.js','utf8');const fn=new Function('$vars',src);
+const it={supplierId:'SUP-VN-01',contractRef:'SP-TEST-0502',riskScore:40,coverShortfallDays:11,requestKey:'us7000m9g4|SUP-VN-01',contractText:'...'};
+const base={content:'Expedite closes the gap; no confirmed disruption.',standardLeadDays:21,expediteLeadDays:10,expediteSurchargePct:15,expediteCostCapUsd:7500,altSupplier:'Harbor Fiber Works',proposedAction:'expedite',confidence:0.7};
+const run=(o,i)=>fn({loop1:{currentItem:Object.assign({},it,i||{})},autonomousAgent2:{output:Object.assign({},base,o)}});
+const show=(n,r)=>console.log(n.padEnd(20),r.outcome,JSON.stringify(r.issues));
+show('good',run({}));
+show('agent failed',fn({loop1:{currentItem:it},autonomousAgent2:undefined}));
+show('over cap',run({expediteCostCapUsd:12000}));
+show('bad alt',run({proposedAction:'alt_source',altSupplier:'Acme'}));
+show('claim',run({content:'The site is disrupted.'}));
+show('no contract',run({},{contractText:''}));
+console.log(run({}).detail);

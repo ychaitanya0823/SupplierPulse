@@ -1,0 +1,34 @@
+flowchart TD
+  T([Manual trigger<br/>contract PDF]) --> H[HTTP Request<br/>USGS event API<br/>retry 2, timeout 1 min]
+  T2([Every 15 min<br/>time trigger]) --> H
+  H --> P[Parse USGS response]
+  P --> D0{New M6+ event?}
+  D0 -- no --> NN([End: no new event])
+  D0 -- yes --> S[(Load suppliers<br/>Data Fabric)]
+  S --> X[Exposure check<br/>haversine + radius<br/>days-of-cover, risk]
+  X --> D1{Any supplier<br/>exposed?}
+  D1 -- no --> NE[No exposure] --> A1[(Audit NO_EXPOSURE)]
+  D1 -- yes --> L[[Loop: each other exposed supplier<br/>contract agent + policy check]]
+  L --> A7[(Audit PROPOSAL_FOR_REVIEW)]
+  A7 --> AG[Contract analyst agent<br/>Claude Sonnet 5, Analyze Files<br/>7 typed outputs]
+  AG --> V[Validator<br/>policy + language rules]
+  V --> BI[Business impact & options<br/>units short, USD at risk<br/>expedite vs alt-source vs buffer]
+  BI --> D2{Proposal valid?}
+  D2 -- no --> MR[Manual review] --> A2[(Audit MANUAL_REVIEW)]
+  D2 -- yes --> F[(Find existing request)]
+  F --> D3{Already requested?}
+  D3 -- yes --> DS[Duplicate skipped] --> A3[(Audit DUPLICATE_SKIPPED)]
+  D3 -- no --> Q[/Planner approval<br/>Quick Form/]
+  Q -- Reject --> RJ[Rejected result] --> A4[(Audit REJECTED)]
+  Q -- Approve --> C[(Create request)] --> RB[(Read back request)] --> AP[Approved result] --> A5[(Audit APPROVED_REQUEST_CREATED)]
+  H -. error .-> E[Escalate failure]
+  X -. error .-> E
+  AG -. error .-> E
+  BI -. error .-> E
+  E --> A6[(Audit ESCALATED_ERROR)]
+  classDef ai fill:#efe7ff,stroke:#7b5cd6,color:#222;
+  classDef human fill:#fff4d6,stroke:#c9962b,color:#222;
+  classDef audit fill:#e8f5ee,stroke:#3c8c5a,color:#222;
+  classDef biz fill:#e6f0fb,stroke:#2f6db3,color:#222;
+  classDef err fill:#fde8e8,stroke:#c0392b,color:#222;
+  class AG,L ai; class BI biz; class Q human; class A1,A2,A3,A4,A5,A6,A7 audit; class E err;
